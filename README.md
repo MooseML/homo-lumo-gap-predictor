@@ -1,4 +1,13 @@
-# HOMO–LUMO Gap Predictor
+---
+title: 🧪 HOMO‑LUMO Gap Predictor
+emoji: 🧬
+colorFrom: indigo
+colorTo: purple
+sdk: docker
+app_file: app.py 
+pinned: false
+---
+
 
 This web app uses a trained Graph Neural Network (GNN) to predict HOMO–LUMO energy gaps from molecular SMILES strings. Built with [Streamlit](https://streamlit.io), it enables fast single or batch predictions with visualization.
 
