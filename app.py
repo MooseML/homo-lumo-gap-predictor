@@ -5,6 +5,7 @@ import sqlite3
 from datetime import datetime
 from rdkit import Chem
 from rdkit.Chem import Draw
+import os, pathlib
 
 from model import load_model
 from utils import smiles_to_data
@@ -20,9 +21,13 @@ MAX_DISPLAY = 10
 model = load_model(rdkit_dim=RDKIT_DIM, path=MODEL_PATH, device=DEVICE)
 
 # SQLite Setup 
+DB_DIR = os.getenv("DB_DIR", "/tmp")      # /data if you add a volume later
+pathlib.Path(DB_DIR).mkdir(parents=True, exist_ok=True)
+
 @st.cache_resource
 def init_db():
-    conn = sqlite3.connect("predictions.db", check_same_thread=False)
+    db_file = os.path.join(DB_DIR, "predictions.db")
+    conn = sqlite3.connect(db_file, check_same_thread=False)
     c = conn.cursor()
     c.execute("""
         CREATE TABLE IF NOT EXISTS predictions (
