@@ -22,7 +22,7 @@ WORKDIR /app
 COPY . .
 
 # Writable dirs with 775 perms 
-RUN install -d -m 775 /tmp/streamlit /data
+RUN install -d -o appuser -g appuser -m 775 /data /tmp/streamlit
 
 # Environment 
 ENV DB_DIR=/data \
