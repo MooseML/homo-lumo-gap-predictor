@@ -13,7 +13,7 @@ from model import load_model
 from utils import smiles_to_data
 
 #  Config 
-DEVICE, RDKIT_DIM, MODEL_PATH, MAX_DISPLAY = "cpu", 6, "best_hybridgnn.pt", 10
+DEVICE, RDKIT_DIM, MODEL_PATH, MAX_DISPLAY = "cpu", 6, "best_hybridgnn.pt", 20
 
 #  Model & DB (cached) 
 @st.cache_resource
@@ -53,11 +53,11 @@ st.markdown("""
 This app predicts the HOMO-LUMO energy gap for molecules using a trained Graph Neural Network (GNN).
 
 **Instructions:**
-- Enter a **single SMILES** string or **comma-separated list** in the box below.
+- Enter a **single SMILES** string or **comma/newline separated list** in the box below.
 - Or **upload a CSV file** containing a single column of SMILES strings.
 - **Note**: If you've uploaded a CSV and want to switch to typing SMILES, please click the "X" next to the uploaded file to clear it.
-- SMILES format should look like: `CC(=O)Oc1ccccc1C(=O)O` (for aspirin).
-- The app will display predictions and molecule images (up to 10 shown at once).
+- SMILES format should look like: `O=C(C)Oc1ccccc1C(=O)O` (for aspirin).
+- The app will display predictions and molecule images (up to 20 shown at once).
 """)
 
 #  File uploader (outside form) 
@@ -110,7 +110,7 @@ if smiles_list:
         st.subheader(f"Results (first {MAX_DISPLAY})")
         for i, (smi, pred) in enumerate(zip(vsmi, preds)):
             if i >= MAX_DISPLAY:
-                st.info("…truncated")
+                st.info("...Only Displaying 20 Compounds")
                 break
             mol = Chem.MolFromSmiles(smi)
             if mol:
