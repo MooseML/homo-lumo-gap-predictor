@@ -6,22 +6,21 @@ from datetime import datetime
 from rdkit import Chem
 from rdkit.Chem import Draw
 import os, pathlib
-from io import StringIO 
 from model import load_model
 from utils import smiles_to_data
 from torch_geometric.loader import DataLoader
 
-# Config 
+# Config
 DEVICE = "cpu"
 RDKIT_DIM = 6
 MODEL_PATH = "best_hybridgnn.pt"
 MAX_DISPLAY = 10
 
-# Load Model 
+# Load Model
 model = load_model(rdkit_dim=RDKIT_DIM, path=MODEL_PATH, device=DEVICE)
 
-# SQLite Setup 
-DB_DIR = os.getenv("DB_DIR", "/tmp")      # /data if you add a volume later
+# SQLite Setup
+DB_DIR = os.getenv("DB_DIR", "/tmp")
 pathlib.Path(DB_DIR).mkdir(parents=True, exist_ok=True)
 
 @st.cache_resource
@@ -43,7 +42,7 @@ def init_db():
 conn = init_db()
 cursor = conn.cursor()
 
-# Streamlit UI 
+# Streamlit UI
 st.title("HOMO-LUMO Gap Predictor")
 st.markdown("""
 This app predicts the HOMO-LUMO energy gap for molecules using a trained Graph Neural Network (GNN).
@@ -56,10 +55,6 @@ This app predicts the HOMO-LUMO energy gap for molecules using a trained Graph N
 - The app will display predictions and molecule images (up to 10 shown at once).
 """)
 
-
-
-
-#  Single input form 
 smiles_list = []
 
 with st.form("smiles_or_csv"):
@@ -78,9 +73,8 @@ if run:
     if csv_file is not None:
         try:
             csv_file.seek(0)
-            df = pd.read_csv(StringIO(csv_file.getvalue().decode("utf‑8")), comment="#")
+            df = pd.read_csv(csv_file, comment="#")
 
-            # pick SMILES column
             if df.shape[1] == 1:
                 smiles_col = df.iloc[:, 0]
             elif "smiles" in [c.lower() for c in df.columns]:
@@ -105,13 +99,11 @@ if run:
     else:
         st.warning("Please paste SMILES or upload a CSV before pressing *Run*.")
 
-
-# Run Inference 
+# Run Inference
 if smiles_list:
     with st.spinner("Processing molecules..."):
         data_list = smiles_to_data(smiles_list, device=DEVICE)
 
-        # Filter only valid molecules and keep aligned SMILES
         valid_pairs = [(smi, data) for smi, data in zip(smiles_list, data_list) if data is not None]
 
         if not valid_pairs:
@@ -127,7 +119,6 @@ if smiles_list:
                     pred = model(batch).view(-1).cpu().numpy()
                     predictions.extend(pred.tolist())
 
-            # Display Results 
             st.subheader(f"Predictions (showing up to {MAX_DISPLAY} molecules):")
 
             for i, (smi, pred) in enumerate(zip(valid_smiles, predictions)):
@@ -141,16 +132,18 @@ if smiles_list:
                 st.write(f"**SMILES**: `{smi}`")
                 st.write(f"**Predicted HOMO-LUMO Gap**: `{pred:.4f} eV`")
 
-                # Log to SQLite 
                 cursor.execute("INSERT INTO predictions (smiles, prediction, timestamp) VALUES (?, ?, ?)",
                                (smi, pred, str(datetime.now())))
                 conn.commit()
 
-            # Download Results 
-            result_df = pd.DataFrame({"SMILES": valid_smiles, 
-                                      "Predicted HOMO-LUMO Gap (eV)": [round(p, 4) for p in predictions]})
+            result_df = pd.DataFrame({
+                "SMILES": valid_smiles,
+                "Predicted HOMO-LUMO Gap (eV)": [round(p, 4) for p in predictions]
+            })
 
-            st.download_button(label="Download Predictions as CSV", 
-                               data=result_df.to_csv(index=False).encode('utf-8'),
-                               file_name="homolumo_predictions.csv",
-                               mime="text/csv")
+            st.download_button(
+                label="Download Predictions as CSV",
+                data=result_df.to_csv(index=False).encode('utf-8'),
+                file_name="homolumo_predictions.csv",
+                mime="text/csv"
+            )
