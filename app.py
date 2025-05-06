@@ -51,23 +51,19 @@ This app predicts the HOMO-LUMO energy gap for molecules using a trained Graph N
 **Instructions:**
 - Enter a **single SMILES** string or **comma-separated list** in the box below.
 - Or **upload a CSV file** containing a single column of SMILES strings.
-- **Note**: If you've uploaded a CSV and want to switch to typing SMILES, please click the “X” next to the uploaded file to clear it.
+- **Note**: If you've uploaded a CSV and want to switch to typing SMILES, please click the "X" next to the uploaded file to clear it.
 - SMILES format should look like: `CC(=O)Oc1ccccc1C(=O)O` (for aspirin).
 - The app will display predictions and molecule images (up to 10 shown at once).
 """)
 
-
-
+# File uploader outside the form (this is important for Hugging Face Spaces compatibility)
+uploaded_file = st.file_uploader("Upload a CSV file", type=["csv"])
 
 with st.form("input_form"):
     smiles_input = st.text_area(
         "Enter SMILES string(s)", 
         placeholder="C1=CC=CC=C1, CC(=O)Oc1ccccc1C(=O)O", 
         height=120
-        )
-    uploaded_file = st.file_uploader(
-        "…or upload a CSV file", 
-        type=["csv"]
         )
     run_button = st.form_submit_button("Submit")
 
@@ -78,9 +74,16 @@ if run_button:
     #  CSV path 
     if uploaded_file is not None:
         try:
-            uploaded_file.seek(0)
-            data = uploaded_file.getvalue()      # read bytes
-            df = pd.read_csv(StringIO(data.decode("utf-8")), comment="#")
+            # More robust file reading
+            content = uploaded_file.read()
+            if isinstance(content, bytes):
+                content = content.decode('utf-8')
+            
+            # Debug information
+            st.write(f"File size: {len(content)} bytes")
+            
+            df = pd.read_csv(StringIO(content), comment="#")
+            st.write(f"CSV loaded with {df.shape[0]} rows and {df.shape[1]} columns")
 
             # choose the SMILES column
             if df.shape[1] == 1:
@@ -88,15 +91,15 @@ if run_button:
             elif "smiles" in [c.lower() for c in df.columns]:
                 smiles_col = df[[c for c in df.columns if c.lower() == "smiles"][0]]
             else:
-                st.error("CSV must have a single column or a column named 'SMILES'" 
-                         f"Found columns: {', '.join(df.columns)}")
+                st.error(f"CSV must have a single column or a column named 'SMILES'. Found columns: {', '.join(df.columns)}")
                 smiles_col = None
 
             if smiles_col is not None:
                 smiles_list = smiles_col.dropna().astype(str).tolist()
                 st.success(f"{len(smiles_list)} SMILES loaded from CSV")
         except Exception as e:
-            st.error(f"Could not read CSV: {e}")
+            st.error(f"Could not read CSV: {str(e)}")
+            st.error("Error details:", exc_info=True)
 
     # Textarea path 
     elif smiles_input.strip():
