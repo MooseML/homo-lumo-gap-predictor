@@ -51,61 +51,60 @@ This app predicts the HOMO-LUMO energy gap for molecules using a trained Graph N
 **Instructions:**
 - Enter a **single SMILES** string or **comma-separated list** in the box below.
 - Or **upload a CSV file** containing a single column of SMILES strings.
-- **Note**: If you've uploaded a CSV and want to switch to typing SMILES, please click the "X" next to the uploaded file to clear it.
+- **Note**: If you've uploaded a CSV and want to switch to typing SMILES, please click the “X” next to the uploaded file to clear it.
 - SMILES format should look like: `CC(=O)Oc1ccccc1C(=O)O` (for aspirin).
 - The app will display predictions and molecule images (up to 10 shown at once).
 """)
 
-# File uploader outside the form (this is important for Hugging Face Spaces compatibility)
-uploaded_file = st.file_uploader("Upload a CSV file", type=["csv"])
 
-with st.form("input_form"):
-    smiles_input = st.text_area(
-        "Enter SMILES string(s)", 
-        placeholder="C1=CC=CC=C1, CC(=O)Oc1ccccc1C(=O)O", 
-        height=120
-        )
-    run_button = st.form_submit_button("Submit")
 
+
+#  Single input form 
 smiles_list = []
 
-# Process only after the user presses the button
-if run_button:
-    #  CSV path 
-    if uploaded_file is not None:
-        try:
-            # More robust file reading
-            content = uploaded_file.read()
-            if isinstance(content, bytes):
-                content = content.decode('utf-8')
-            
-            # Debug information
-            st.write(f"File size: {len(content)} bytes")
-            
-            df = pd.read_csv(StringIO(content), comment="#")
-            st.write(f"CSV loaded with {df.shape[0]} rows and {df.shape[1]} columns")
+with st.form("smiles_or_csv"):
+    smiles_text = st.text_area(
+        "SMILES (comma or line-separated)",
+        placeholder="C1=CC=CC=C1\nCC(=O)Oc1ccccc1C(=O)O",
+        height=120,
+    )
+    csv_file = st.file_uploader(
+        "…or upload a one-column CSV",
+        type=["csv"],
+    )
+    run = st.form_submit_button("Run Prediction")
 
-            # choose the SMILES column
+if run:
+    if csv_file is not None:
+        try:
+            csv_file.seek(0)
+            df = pd.read_csv(StringIO(csv_file.getvalue().decode("utf‑8")), comment="#")
+
+            # pick SMILES column
             if df.shape[1] == 1:
                 smiles_col = df.iloc[:, 0]
             elif "smiles" in [c.lower() for c in df.columns]:
                 smiles_col = df[[c for c in df.columns if c.lower() == "smiles"][0]]
             else:
-                st.error(f"CSV must have a single column or a column named 'SMILES'. Found columns: {', '.join(df.columns)}")
+                st.error(
+                    "CSV must have a single column **or** a column named 'SMILES'. "
+                    f"Found columns: {', '.join(df.columns)}"
+                )
                 smiles_col = None
 
             if smiles_col is not None:
                 smiles_list = smiles_col.dropna().astype(str).tolist()
-                st.success(f"{len(smiles_list)} SMILES loaded from CSV")
+                st.success(f"{len(smiles_list)} SMILES loaded from CSV.")
         except Exception as e:
-            st.error(f"Could not read CSV: {str(e)}")
-            st.error("Error details:", exc_info=True)
+            st.error(f"CSV read error: {e}")
 
-    # Textarea path 
-    elif smiles_input.strip():
-        raw_input = smiles_input.replace("\n", ",")
-        smiles_list = [s.strip() for s in raw_input.split(",") if s.strip()]
-        st.success(f"{len(smiles_list)} SMILES parsed from text")
+    elif smiles_text.strip():
+        raw = smiles_text.replace("\n", ",")
+        smiles_list = [s.strip() for s in raw.split(",") if s.strip()]
+        st.success(f"{len(smiles_list)} SMILES parsed from textbox.")
+    else:
+        st.warning("Please paste SMILES or upload a CSV before pressing *Run*.")
+
 
 # Run Inference 
 if smiles_list:
