@@ -6,7 +6,7 @@ from datetime import datetime
 from rdkit import Chem
 from rdkit.Chem import Draw
 import os, pathlib
-
+from io import StringIO 
 from model import load_model
 from utils import smiles_to_data
 from torch_geometric.loader import DataLoader
@@ -64,21 +64,39 @@ uploaded_file = st.file_uploader("...or upload a CSV file", type=["csv"])
 
 smiles_list = []
 
-if uploaded_file:
-    try:
-        df = pd.read_csv(uploaded_file)
-        if df.shape[1] != 1:
-            st.error("CSV should have only one column with SMILES strings.")
-        else:
-            smiles_list = df.iloc[:, 0].dropna().astype(str).tolist()
-            st.success(f"{len(smiles_list)} SMILES loaded from file.")
-    except Exception as e:
-        st.error(f"Error reading CSV: {e}")
+with st.form("input_form"):
+    smiles_input = st.text_area("Enter SMILES string(s)", placeholder="C1=CC=CC=C1, CC(=O)Oc1ccccc1C(=O)O", height=120)
+    uploaded_file = st.file_uploader("…or upload a CSV file", type=["csv"])
+    run_button = st.form_submit_button("Run Prediction")
 
-elif smiles_input:
-    raw_input = smiles_input.strip().replace("\n", ",")
-    smiles_list = [smi.strip() for smi in raw_input.split(",") if smi.strip()]
-    st.success(f"{len(smiles_list)} SMILES parsed from input.")
+# Process only after the user presses the button
+if run_button:
+    #  CSV path 
+    if uploaded_file is not None:
+        try:
+            data = uploaded_file.getvalue()      # read bytes
+            df = pd.read_csv(StringIO(data.decode("utf-8")), comment="#")
+
+            # choose the SMILES column
+            if df.shape[1] == 1:
+                smiles_col = df.iloc[:, 0]
+            elif "smiles" in [c.lower() for c in df.columns]:
+                smiles_col = df[[c for c in df.columns if c.lower() == "smiles"][0]]
+            else:
+                st.error("CSV must have a single column or a column named 'SMILES'" f"Found columns: {', '.join(df.columns)}")
+                smiles_col = None
+
+            if smiles_col is not None:
+                smiles_list = smiles_col.dropna().astype(str).tolist()
+                st.success(f"{len(smiles_list)} SMILES loaded from CSV")
+        except Exception as e:
+            st.error(f"Could not read CSV: {e}")
+
+    # Textarea path 
+    elif smiles_input.strip():
+        raw_input = smiles_input.replace("\n", ",")
+        smiles_list = [s.strip() for s in raw_input.split(",") if s.strip()]
+        st.success(f"{len(smiles_list)} SMILES parsed from text")
 
 # Run Inference 
 if smiles_list:
@@ -89,7 +107,7 @@ if smiles_list:
         valid_pairs = [(smi, data) for smi, data in zip(smiles_list, data_list) if data is not None]
 
         if not valid_pairs:
-            st.warning("No valid molecules found.")
+            st.warning("No valid molecules found")
         else:
             valid_smiles, valid_data = zip(*valid_pairs)
             loader = DataLoader(valid_data, batch_size=64)
@@ -121,14 +139,10 @@ if smiles_list:
                 conn.commit()
 
             # Download Results 
-            result_df = pd.DataFrame({
-                "SMILES": valid_smiles,
-                "Predicted HOMO-LUMO Gap (eV)": [round(p, 4) for p in predictions]
-            })
+            result_df = pd.DataFrame({"SMILES": valid_smiles, 
+                                      "Predicted HOMO-LUMO Gap (eV)": [round(p, 4) for p in predictions]})
 
-            st.download_button(
-                label="Download Predictions as CSV",
-                data=result_df.to_csv(index=False).encode('utf-8'),
-                file_name="homolumo_predictions.csv",
-                mime="text/csv"
-            )
+            st.download_button(label="Download Predictions as CSV", 
+                               data=result_df.to_csv(index=False).encode('utf-8'),
+                               file_name="homolumo_predictions.csv",
+                               mime="text/csv")
