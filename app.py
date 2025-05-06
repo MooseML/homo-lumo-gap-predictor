@@ -56,24 +56,27 @@ This app predicts the HOMO-LUMO energy gap for molecules using a trained Graph N
 - The app will display predictions and molecule images (up to 10 shown at once).
 """)
 
-# Text Input 
-smiles_input = st.text_area("Enter SMILES string(s)", placeholder="C1=CC=CC=C1, CC(=O)Oc1ccccc1C(=O)O")
 
-# File Upload 
-uploaded_file = st.file_uploader("...or upload a CSV file", type=["csv"])
 
-smiles_list = []
 
 with st.form("input_form"):
-    smiles_input = st.text_area("Enter SMILES string(s)", placeholder="C1=CC=CC=C1, CC(=O)Oc1ccccc1C(=O)O", height=120)
-    uploaded_file = st.file_uploader("…or upload a CSV file", type=["csv"])
-    run_button = st.form_submit_button("Run Prediction")
+    smiles_input = st.text_area(
+        "Enter SMILES string(s)", 
+        placeholder="C1=CC=CC=C1, CC(=O)Oc1ccccc1C(=O)O", 
+        height=120
+        )
+    uploaded_file = st.file_uploader(
+        "…or upload a CSV file", 
+        type=["csv"]
+        )
+    run_button = st.form_submit_button("Submit")
 
 # Process only after the user presses the button
 if run_button:
     #  CSV path 
     if uploaded_file is not None:
         try:
+            uploaded_file.seek(0)
             data = uploaded_file.getvalue()      # read bytes
             df = pd.read_csv(StringIO(data.decode("utf-8")), comment="#")
 
@@ -83,7 +86,8 @@ if run_button:
             elif "smiles" in [c.lower() for c in df.columns]:
                 smiles_col = df[[c for c in df.columns if c.lower() == "smiles"][0]]
             else:
-                st.error("CSV must have a single column or a column named 'SMILES'" f"Found columns: {', '.join(df.columns)}")
+                st.error("CSV must have a single column or a column named 'SMILES'" 
+                         f"Found columns: {', '.join(df.columns)}")
                 smiles_col = None
 
             if smiles_col is not None:
