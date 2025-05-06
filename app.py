@@ -71,6 +71,8 @@ with st.form("input_form"):
         )
     run_button = st.form_submit_button("Submit")
 
+smiles_list = []
+
 # Process only after the user presses the button
 if run_button:
     #  CSV path 
