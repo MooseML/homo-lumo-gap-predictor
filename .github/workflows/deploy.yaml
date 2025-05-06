@@ -1,20 +1,26 @@
-name: Deploy to Hugging Face Space
+name: Deploy to Hugging Face Space
 
 on:
   push:
-    branches: [ main ] # deploy every push to main
+    branches: [ main ] # rebuild Space on every push to main
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4 # pulls  repo
+
       - name: Push repo to HF Space
         env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_TOKEN: ${{ secrets.HF_TOKEN }} # GitHub secret with write scope
         run: |
           git config --global user.email "ci@github"
           git config --global user.name  "github-ci"
-          git remote add hf https://$HF_TOKEN@huggingface.co/spaces/MooseML/homo-lumo-gap-predictor \
-            || git remote set-url hf https://$HF_TOKEN@huggingface.co/spaces/MooseML/homo-lumo-gap-predictor
+
+          # add (or update) the remote exactly once
+          git remote add hf https://$HF_TOKEN@huggingface.co/spaces/MooseML/homo-lumo-gap-predictor || \
+          git remote set-url hf https://$HF_TOKEN@huggingface.co/spaces/MooseML/homo-lumo-gap-predictor
+
+          # push current branch (main) to the Space
           git push -f hf HEAD:main
