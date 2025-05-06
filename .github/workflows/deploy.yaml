@@ -9,15 +9,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - name: Push repo to HF Space
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
           git config --global user.email "ci@github"
           git config --global user.name  "github-ci"
-          # add or update the HF remote
-          git remote add hf https://$HF_TOKEN@huggingface.co/spaces/MooseML/homo-lumo-gap-predictor || \
-          git remote set-url  hf https://$HF_TOKEN@huggingface.co/spaces/MooseML/homo-lumo-gap-predictor
-          # force-push the current branch to Space
+          git remote add hf https://$HF_TOKEN@huggingface.co/spaces/MooseML/homo-lumo-gap-predictor \
+            || git remote set-url hf https://$HF_TOKEN@huggingface.co/spaces/MooseML/homo-lumo-gap-predictor
           git push -f hf HEAD:main
