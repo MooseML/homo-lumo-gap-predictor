@@ -10,7 +10,7 @@ pinned: false
 
 # HOMO‑LUMO Gap Predictor — Streamlit + Hybrid GNN
 
-> **Live demo:** [huggingface.co/spaces/MooseML/homo-lumo-gap-predictor](https://huggingface.co/spaces/MooseML/homo-lumo-gap-predictor) &nbsp;•&nbsp;  
+> **Live demo:** [huggingface.co/spaces/MooseML/homo-lumo-gap-predictor](https://huggingface.co/spaces/MooseML/homo-lumo-gap-predictor) &nbsp;  
 > **Code:** <https://github.com/MooseML/homo-lumo-gap-predictor>
 
 This web app predicts HOMO–LUMO energy gaps from molecular **SMILES** using a trained hybrid Graph Neural Network (PyTorch Geometric and RDKit descriptors).  
@@ -65,7 +65,7 @@ streamlit run app.py
 
 | Format       | Example                                        |
 | ------------ | ---------------------------------------------- |
-| **Textarea** | `O=C(C)Oc1ccccc1C(=O)O, C1=CC=CC=C1`           |
+| **Text area** | `O=C(C)Oc1ccccc1C(=O)O`           |
 | **CSV**      | One column, no header:<br>`CCO`<br>`Cc1ccccc1` |
 
 Invalid or exotic SMILES are skipped and listed in the terminal log (RDKit warnings)
