@@ -75,7 +75,6 @@ Invalid or exotic SMILES are skipped and listed in the terminal log (RDKit warni
 ## Project files
 
 ```
-.
 ├── app.py          – Streamlit front‑end
 ├── model.py        – Hybrid GNN loader (PyTorch Geometric)
 ├── utils.py        – RDKit helpers & SMILES→graph
