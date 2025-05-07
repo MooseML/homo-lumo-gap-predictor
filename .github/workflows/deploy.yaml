@@ -1,4 +1,4 @@
-name: Deploy to Hugging Face Space
+name: Deploy to Hugging Face Space
 
 on:
   push:
@@ -10,12 +10,14 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4 # pulls  repo
+        with: 
+          fetch-depth: 0 
 
       - name: Push repo to HF Space
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }} # GitHub secret with write scope
         run: |
-          git config --global user.email "ci@github"
+          git config --global user.email "ci@github.com"
           git config --global user.name  "github-ci"
 
           # add (or update) the remote exactly once
